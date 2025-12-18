@@ -340,7 +340,7 @@ const SweaterApp = ({ onClose, onExport }) => {
         <div className="h-6 border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-4">
           <div className="flex-1 truncate">{genStatus || "Nano Banana Tech"}</div>
           <div className="w-px h-full bg-win95-dark/50"></div>
-          <div className="text-[10px] text-gray-500">made by shalev amin | @shalev.amin</div>
+          <div className="text-xs font-bold text-black">made by shalev amin | IG: @shalev.amin</div>
           <div className="w-px h-full bg-win95-dark/50"></div>
           <div className="font-bold shrink-0">V 3.0 Pro</div>
         </div>

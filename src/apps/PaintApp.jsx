@@ -44,10 +44,10 @@ const PaintApp = ({ onClose, initialImage }) => {
   // Draw watermark function
   const drawWatermark = (ctx) => {
     ctx.save();
-    ctx.font = '10px Arial';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.textAlign = 'right';
-    ctx.fillText('made by shalev amin | IG: @shalev.amin', 595, 395);
+    ctx.fillText('made by shalev amin | IG: @shalev.amin', 590, 390);
     ctx.restore();
   };
 
@@ -162,8 +162,8 @@ const PaintApp = ({ onClose, initialImage }) => {
         style={{ 
           width: windowSize.width, 
           height: windowSize.height,
-          top: isMaximized ? 0 : 5,
-          left: isMaximized ? 0 : 5,
+          top: isMaximized ? 0 : 30,
+          left: isMaximized ? 0 : 150,
           resize: 'both',
           overflow: 'hidden',
           minWidth: 400,
@@ -260,7 +260,7 @@ const PaintApp = ({ onClose, initialImage }) => {
 
         <div className="h-6 border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-4">
             <div className="flex-1 truncate">For Help, click Help Topics on the Help Menu.</div>
-            <div className="text-[10px] text-gray-500">made by shalev amin | @shalev.amin</div>
+            <div className="text-xs font-bold text-black">made by shalev amin | IG: @shalev.amin</div>
         </div>
       </div>
     </Draggable>
