@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
-import { Pencil, Eraser, MousePointer2, Type, Slash, Square, Circle } from 'lucide-react';
+import { Pencil, Eraser, MousePointer2, Type, Slash, Square, Circle, Trash2, Minimize2, Maximize2 } from 'lucide-react';
 import RetroButton from '../components/ui/RetroButton';
 
 const PaintApp = ({ onClose, initialImage }) => {
@@ -8,6 +8,9 @@ const PaintApp = ({ onClose, initialImage }) => {
   const [activeColor, setActiveColor] = useState('#000000');
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState(null);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 800, height: 600 });
   
   const canvasRef = useRef(null);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -38,6 +41,16 @@ const PaintApp = ({ onClose, initialImage }) => {
       '#ffffff','#c0c0c0','#ff0000','#ffff00','#00ff00','#00ffff','#0000ff','#ff00ff','#ffff80','#00ff80', '#80ffff', '#8080ff', '#ff8040', '#ff0080'
   ];
 
+  // Draw watermark function
+  const drawWatermark = (ctx) => {
+    ctx.save();
+    ctx.font = '10px Arial';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.textAlign = 'right';
+    ctx.fillText('made by shalev amin | IG: @shalev.amin', 595, 395);
+    ctx.restore();
+  };
+
   useEffect(() => {
     if (canvasRef.current) {
         const canvas = canvasRef.current;
@@ -48,6 +61,7 @@ const PaintApp = ({ onClose, initialImage }) => {
         ctx.lineJoin = 'round';
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height); // White background
+        drawWatermark(ctx);
         setContext(ctx);
     }
   }, []);
@@ -58,9 +72,6 @@ const PaintApp = ({ onClose, initialImage }) => {
         const img = new Image();
         img.src = initialImage;
         img.onload = () => {
-            // Draw image to fit canvas or center it
-            // Simple: draw at 0,0, but maybe improved centered logic?
-            // Let's clear and draw
             context.fillStyle = '#ffffff';
             context.fillRect(0, 0, 600, 400);
             
@@ -70,6 +81,7 @@ const PaintApp = ({ onClose, initialImage }) => {
             const y = (400 - img.height * scale) / 2;
             
             context.drawImage(img, x, y, img.width * scale, img.height * scale);
+            drawWatermark(context);
         };
     }
   }, [initialImage, context]);
@@ -118,11 +130,45 @@ const PaintApp = ({ onClose, initialImage }) => {
     context?.beginPath();
   };
 
+  const handleClear = () => {
+    if (!context) return;
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, 600, 400);
+    drawWatermark(context);
+  };
+
+  const handleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  const handleMaximize = () => {
+    if (isMaximized) {
+      setWindowSize({ width: 800, height: 600 });
+    } else {
+      setWindowSize({ width: window.innerWidth - 20, height: window.innerHeight - 60 });
+    }
+    setIsMaximized(!isMaximized);
+  };
+
+  if (isMinimized) {
+    return null; // Hidden when minimized (taskbar will show it)
+  }
+
   return (
-    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef}>
+    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef} disabled={isMaximized}>
       <div 
         ref={windowRef}
-        className="w-[800px] h-[600px] absolute top-5 left-5 z-20 shadow-win95-out bg-win95-bg flex flex-col"
+        className="absolute z-20 shadow-win95-out bg-win95-bg flex flex-col"
+        style={{ 
+          width: windowSize.width, 
+          height: windowSize.height,
+          top: isMaximized ? 0 : 5,
+          left: isMaximized ? 0 : 5,
+          resize: 'both',
+          overflow: 'hidden',
+          minWidth: 400,
+          minHeight: 300
+        }}
       >
         <div className="window-handle bg-gradient-to-r from-win95-blue to-[#1084d0] px-1 py-0.5 flex justify-between items-center cursor-default select-none">
             <div className="flex items-center gap-1">
@@ -130,8 +176,16 @@ const PaintApp = ({ onClose, initialImage }) => {
                 <span className="text-white font-pixel text-sm tracking-wider font-bold">untitled - Paint</span>
             </div>
             <div className="flex gap-0.5">
-                <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1">_</button>
-                <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2">□</button>
+                <button 
+                  className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1"
+                  onClick={handleMinimize}
+                  title="Minimize"
+                >_</button>
+                <button 
+                  className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2"
+                  onClick={handleMaximize}
+                  title={isMaximized ? "Restore" : "Maximize"}
+                >{isMaximized ? '❐' : '□'}</button>
                 <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pt-[-2px]" onClick={onClose}>x</button>
             </div>
         </div>
@@ -158,6 +212,15 @@ const PaintApp = ({ onClose, initialImage }) => {
                         </RetroButton>
                     ))}
                 </div>
+                
+                {/* Clear Button */}
+                <RetroButton 
+                  onClick={handleClear}
+                  className="w-full mt-2 text-xs flex items-center justify-center gap-1 p-1"
+                  title="Clear Canvas"
+                >
+                  <Trash2 size={12} /> Clear
+                </RetroButton>
             </div>
 
             <div className="flex-1 bg-win95-dark/20 p-2 shadow-win95-in overflow-auto flex items-start justify-center">
@@ -197,6 +260,7 @@ const PaintApp = ({ onClose, initialImage }) => {
 
         <div className="h-6 border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-4">
             <div className="flex-1 truncate">For Help, click Help Topics on the Help Menu.</div>
+            <div className="text-[10px] text-gray-500">made by shalev amin | @shalev.amin</div>
         </div>
       </div>
     </Draggable>

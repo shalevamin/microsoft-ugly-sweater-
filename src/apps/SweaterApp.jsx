@@ -13,6 +13,9 @@ const SweaterApp = ({ onClose, onExport }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [sweaterOpacity, setSweaterOpacity] = useState(1);
   const [genStatus, setGenStatus] = useState(null);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 700, height: 500 });
   
   // AI Positioning State (for fallback)
   const [sweaterPos, setSweaterPos] = useState({ x: 0, y: 0 });
@@ -180,13 +183,41 @@ const SweaterApp = ({ onClose, onExport }) => {
   const handleReset = () => {
     setUserImage(null);
     setShowSweater(false);
+  };
+
+  const handleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  const handleMaximize = () => {
+    if (isMaximized) {
+      setWindowSize({ width: 700, height: 500 });
+    } else {
+      setWindowSize({ width: window.innerWidth - 20, height: window.innerHeight - 60 });
+    }
+    setIsMaximized(!isMaximized);
+  };
+
+  if (isMinimized) {
+    return null; // Hidden when minimized
   }
 
   return (
-    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef}>
+    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef} disabled={isMaximized}>
       <div 
         ref={windowRef}
-        className="w-[700px] h-[500px] absolute top-20 right-20 z-30 shadow-win95-out bg-win95-bg flex flex-col"
+        className="absolute z-30 shadow-win95-out bg-win95-bg flex flex-col"
+        style={{ 
+          width: windowSize.width, 
+          height: windowSize.height,
+          top: isMaximized ? 0 : 80,
+          right: isMaximized ? 0 : 80,
+          left: isMaximized ? 0 : 'auto',
+          resize: 'both',
+          overflow: 'hidden',
+          minWidth: 400,
+          minHeight: 300
+        }}
       >
         <div className="window-handle bg-gradient-to-r from-win95-blue to-[#1084d0] px-1 py-0.5 flex justify-between items-center cursor-default select-none">
           <div className="flex items-center gap-1">
@@ -194,8 +225,16 @@ const SweaterApp = ({ onClose, onExport }) => {
             <span className="text-white font-pixel text-sm tracking-wider font-bold">יצירת תמונה עם הסוואצרט המכוער</span>
           </div>
           <div className="flex gap-0.5">
-            <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1">_</button>
-            <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2">□</button>
+            <button 
+              className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1"
+              onClick={handleMinimize}
+              title="Minimize"
+            >_</button>
+            <button 
+              className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2"
+              onClick={handleMaximize}
+              title={isMaximized ? "Restore" : "Maximize"}
+            >{isMaximized ? '❐' : '□'}</button>
             <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pt-[-2px]" onClick={onClose}>x</button>
           </div>
         </div>
@@ -300,6 +339,8 @@ const SweaterApp = ({ onClose, onExport }) => {
 
         <div className="h-6 border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-4">
           <div className="flex-1 truncate">{genStatus || "Nano Banana Tech"}</div>
+          <div className="w-px h-full bg-win95-dark/50"></div>
+          <div className="text-[10px] text-gray-500">made by shalev amin | @shalev.amin</div>
           <div className="w-px h-full bg-win95-dark/50"></div>
           <div className="font-bold shrink-0">V 3.0 Pro</div>
         </div>
