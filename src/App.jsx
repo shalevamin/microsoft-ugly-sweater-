@@ -46,7 +46,7 @@ function App() {
               <span className="text-xs bg-[#008080] group-hover:bg-[#000080] border border-transparent group-hover:border-dotted group-hover:border-white px-1">Ugly Sweater</span>
           </div>
           <div className="flex flex-col items-center gap-1 group cursor-pointer">
-              <img src="https://win98icons.alexmeub.com/icons/png/computer_explorer-0.png" className="w-8 h-8" alt="My Computer"/>
+              <img src="/my-pc-icon.png" className="w-10 h-10" alt="My Computer"/>
               <span className="text-xs bg-[#008080] group-hover:bg-[#000080] border border-transparent group-hover:border-dotted group-hover:border-white px-1">My Computer</span>
           </div>
       </div>
