@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 import html2canvas from 'html2canvas';
 import { ImagePlus, Save, RefreshCw } from 'lucide-react';
@@ -15,7 +15,7 @@ const SweaterApp = ({ onClose, onExport }) => {
   const [genStatus, setGenStatus] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [windowSize, setWindowSize] = useState({ width: 700, height: 500 });
+  const [isMobile, setIsMobile] = useState(false);
   
   // AI Positioning State (for fallback)
   const [sweaterPos, setSweaterPos] = useState({ x: 0, y: 0 });
@@ -25,6 +25,16 @@ const SweaterApp = ({ onClose, onExport }) => {
   const fileInputRef = useRef(null);
   const windowRef = useRef(null);
   const sweaterRef = useRef(null);
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -67,8 +77,6 @@ const SweaterApp = ({ onClose, onExport }) => {
 
       setGenStatus('Generating with Nano Banana Pro...');
       
-      // Using the gemini-3-pro-image-preview model (Nano Banana Pro)
-      // This is the advanced model optimized for complex image editing
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,7 +133,6 @@ const SweaterApp = ({ onClose, onExport }) => {
         return; 
       }
       
-      // If no image, check for text response (might be a refusal)
       const textPart = parts.find(p => p.text);
       if (textPart) {
         console.warn("AI Text Response:", textPart.text);
@@ -190,71 +197,105 @@ const SweaterApp = ({ onClose, onExport }) => {
   };
 
   const handleMaximize = () => {
-    if (isMaximized) {
-      setWindowSize({ width: 700, height: 500 });
-    } else {
-      setWindowSize({ width: window.innerWidth - 20, height: window.innerHeight - 60 });
-    }
     setIsMaximized(!isMaximized);
   };
 
   if (isMinimized) {
-    return null; // Hidden when minimized
+    return null;
   }
 
+  // Mobile: full width, Desktop: original positioning
+  const windowStyle = isMobile ? {
+    width: '100%',
+    height: 'calc(100vh - 40px)',
+    top: 0,
+    left: 0,
+    right: 0,
+  } : {
+    width: isMaximized ? window.innerWidth - 20 : 700,
+    height: isMaximized ? window.innerHeight - 60 : 500,
+    top: isMaximized ? 0 : 80,
+    right: isMaximized ? 0 : 80,
+    left: isMaximized ? 0 : 'auto',
+  };
+
+  const canvasSize = isMobile ? Math.min(window.innerWidth - 40, 300) : 400;
+
   return (
-    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef} disabled={isMaximized}>
+    <Draggable handle=".window-handle" bounds="parent" nodeRef={windowRef} disabled={isMaximized || isMobile}>
       <div 
         ref={windowRef}
         className="absolute z-30 shadow-win95-out bg-win95-bg flex flex-col"
         style={{ 
-          width: windowSize.width, 
-          height: windowSize.height,
-          top: isMaximized ? 0 : 80,
-          right: isMaximized ? 0 : 80,
-          left: isMaximized ? 0 : 'auto',
-          resize: 'both',
+          ...windowStyle,
+          resize: isMobile ? 'none' : 'both',
           overflow: 'hidden',
-          minWidth: 400,
-          minHeight: 300
+          minWidth: isMobile ? 'auto' : 400,
+          minHeight: isMobile ? 'auto' : 300
         }}
       >
         <div className="window-handle bg-gradient-to-r from-win95-blue to-[#1084d0] px-1 py-0.5 flex justify-between items-center cursor-default select-none">
-          <div className="flex items-center gap-1">
-            <img src="/paint-icon.png" alt="icon" className="w-4 h-4" />
-            <span className="text-white font-pixel text-sm tracking-wider font-bold">יצירת תמונה עם הסוואצרט המכוער</span>
+          <div className="flex items-center gap-1 overflow-hidden">
+            <img src="/paint-icon.png" alt="icon" className="w-4 h-4 shrink-0" />
+            <span className="text-white font-pixel text-xs sm:text-sm tracking-wider font-bold truncate">
+              {isMobile ? 'Ugly Sweater AI' : 'יצירת תמונה עם הסוואצרט המכוער'}
+            </span>
           </div>
-          <div className="flex gap-0.5">
-            <button 
-              className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1"
-              onClick={handleMinimize}
-              title="Minimize"
-            >_</button>
-            <button 
-              className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2"
-              onClick={handleMaximize}
-              title={isMaximized ? "Restore" : "Maximize"}
-            >{isMaximized ? '❐' : '□'}</button>
+          <div className="flex gap-0.5 shrink-0">
+            {!isMobile && (
+              <>
+                <button 
+                  className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-1"
+                  onClick={handleMinimize}
+                  title="Minimize"
+                >_</button>
+                <button 
+                  className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pb-2"
+                  onClick={handleMaximize}
+                  title={isMaximized ? "Restore" : "Maximize"}
+                >{isMaximized ? '❐' : '□'}</button>
+              </>
+            )}
             <button className="bg-win95-bg shadow-win95-out w-4 h-4 flex items-center justify-center font-bold text-[10px] pt-[-2px]" onClick={onClose}>x</button>
           </div>
         </div>
 
-        <div className="flex gap-3 p-1 border-b border-win95-light shadow-win95-flat mb-1 px-2 text-sm bg-win95-bg">
-          {['File', 'Edit', 'View', 'Image', 'Options', 'Help'].map(item => (
-            <span key={item} className="cursor-pointer hover:bg-win95-blue hover:text-white px-1">
-              <span className="underline">{item[0]}</span>{item.slice(1)}
-            </span>
-          ))}
-        </div>
+        {!isMobile && (
+          <div className="flex gap-3 p-1 border-b border-win95-light shadow-win95-flat mb-1 px-2 text-sm bg-win95-bg">
+            {['File', 'Edit', 'View', 'Image', 'Options', 'Help'].map(item => (
+              <span key={item} className="cursor-pointer hover:bg-win95-blue hover:text-white px-1">
+                <span className="underline">{item[0]}</span>{item.slice(1)}
+              </span>
+            ))}
+          </div>
+        )}
 
-        <div className="flex-1 flex flex-row overflow-hidden gap-1 p-1">
-          <div className="w-24 bg-win95-bg flex flex-col gap-2 p-2 items-center border-r border-win95-dark">
-            <div className="text-xs font-bold text-center mb-2">Controls</div>
-            <RetroButton onClick={() => fileInputRef.current?.click()} className="w-full text-xs flex flex-col items-center gap-1 p-2">
+        <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'} overflow-hidden gap-1 p-1`}>
+          <div className={`${isMobile ? 'flex flex-row justify-center gap-2 p-2' : 'w-24 flex flex-col gap-2 p-2 items-center border-r border-win95-dark'} bg-win95-bg`}>
+            {!isMobile && <div className="text-xs font-bold text-center mb-2">Controls</div>}
+            
+            <RetroButton onClick={() => fileInputRef.current?.click()} className={`${isMobile ? 'px-4 py-2' : 'w-full p-2'} text-xs flex ${isMobile ? 'flex-row' : 'flex-col'} items-center gap-1`}>
               <ImagePlus size={16} /> Open
             </RetroButton>
             
-            {showSweater && (
+            {userImage && (
+              <>
+                <RetroButton onClick={handleSave} className={`${isMobile ? 'px-4 py-2' : 'w-full p-2 mt-2'} text-xs flex ${isMobile ? 'flex-row' : 'flex-col'} items-center gap-1`}>
+                  <Save size={16} /> Save
+                </RetroButton>
+                <RetroButton onClick={handleReset} className={`${isMobile ? 'px-4 py-2' : 'w-full p-2 mt-2'} text-xs flex ${isMobile ? 'flex-row' : 'flex-col'} items-center gap-1 bg-win95-light`}>
+                  <RefreshCw size={14} /> Clear
+                </RetroButton>
+                {!isMobile && (
+                  <RetroButton onClick={handleSendToPaint} className="w-full text-xs flex flex-col items-center gap-1 p-2 mt-4 bg-win95-light">
+                    <img src="/paint-icon.png" className="w-4 h-4" />
+                    To Paint
+                  </RetroButton>
+                )}
+              </>
+            )}
+            
+            {showSweater && !isMobile && (
               <>
                 <div className="w-full text-[10px] mt-2 text-center">Sweater Opacity</div>
                 <input 
@@ -268,32 +309,18 @@ const SweaterApp = ({ onClose, onExport }) => {
                 />
               </>
             )}
-            
-            {userImage && (
-              <>
-                <RetroButton onClick={handleSendToPaint} className="w-full text-xs flex flex-col items-center gap-1 p-2 mt-4 bg-win95-light">
-                  <img src="/paint-icon.png" className="w-4 h-4" />
-                  To Paint
-                </RetroButton>
-                <RetroButton onClick={handleSave} className="w-full text-xs flex flex-col items-center gap-1 p-2 mt-2">
-                  <Save size={16} /> Save
-                </RetroButton>
-                <RetroButton onClick={handleReset} className="w-full text-xs flex flex-col items-center gap-1 p-2 mt-2 bg-win95-light">
-                  <RefreshCw size={14} /> Clear
-                </RetroButton>
-              </>
-            )}
           </div>
 
           <div className="flex-1 bg-win95-dark/20 p-2 shadow-win95-in overflow-auto flex items-center justify-center relative">
             <div 
               ref={canvasRef}
-              className="bg-white relative shadow-win95-out relative overflow-hidden flex items-center justify-center"
-              style={{ width: '400px', height: '400px' }}
+              className="bg-white relative shadow-win95-out overflow-hidden flex items-center justify-center"
+              style={{ width: canvasSize, height: canvasSize }}
             >
               {!userImage && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-win95-dark pointer-events-none select-none">
-                  <p className="mb-4">No Image Loaded</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-win95-dark pointer-events-none select-none p-4 text-center">
+                  <p className={`${isMobile ? 'text-sm' : ''} mb-4`}>No Image Loaded</p>
+                  {isMobile && <p className="text-xs text-gray-500">Tap "Open" to upload a photo</p>}
                 </div>
               )}
               
@@ -337,12 +364,12 @@ const SweaterApp = ({ onClose, onExport }) => {
           </div>
         </div>
 
-        <div className="h-6 border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-4">
-          <div className="flex-1 truncate">{genStatus || "Nano Banana Tech"}</div>
+        <div className={`${isMobile ? 'h-8' : 'h-6'} border-t border-win95-light shadow-win95-in bg-win95-bg flex items-center px-1 text-xs gap-2`}>
+          <div className="flex-1 truncate text-[10px] sm:text-xs">{genStatus || "Nano Banana Tech"}</div>
           <div className="w-px h-full bg-win95-dark/50"></div>
-          <div className="text-xs font-bold text-black">made by shalev amin | IG: @shalev.amin</div>
+          <div className={`${isMobile ? 'text-[8px]' : 'text-xs'} font-bold text-black truncate`}>shalev amin | @shalev.amin</div>
           <div className="w-px h-full bg-win95-dark/50"></div>
-          <div className="font-bold shrink-0">V 3.0 Pro</div>
+          <div className="font-bold shrink-0 text-[10px] sm:text-xs">V 3.0</div>
         </div>
 
         <input 
